@@ -1,0 +1,46 @@
+/* CS61C Sp14 Project 3 Part 1: YOUR CODE HERE
+ *
+ * You MUST implement the calc_min_dist() function in this file.
+ *
+ * You do not need to implement/use the swap(), flip_horizontal(), transpose(),
+ * or rotate_ccw_90() functions, but you may find them useful. Feel free to
+ * define additional helper functions.
+ */
+
+#include <float.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "digit_rec.h"
+#include "utils.h"
+
+/* Swaps the values pointed to by the pointers X and Y. */
+void swap(float *x, float *y) {
+    /* Optional function */
+}
+
+/* Flips the elements of a square array ARR across the y-axis. */
+void flip_horizontal(float *arr, int width) {
+    /* Optional function */
+}
+
+/* Transposes the square array ARR. */
+void transpose(float *arr, int width) {
+    /* Optional function */
+}
+
+/* Rotates the square array ARR by 90 degrees counterclockwise. */
+void rotate_ccw_90(float *arr, int width) {
+    /* Optional function */
+}
+
+/* Returns the squared Euclidean distance between TEMPLATE and IMAGE. The size
+ * of IMAGE is I_WIDTH * I_HEIGHT, while TEMPLATE is square with side length
+ * T_WIDTH. The template image should be flipped, rotated, and translated
+ * across IMAGE.
+ */
+float calc_min_dist(float *image, int i_width, int i_height,
+        float *template, int t_width) {
+    float min_dist = FLT_MAX;
+    /* YOUR CODE HERE */
+    return min_dist;
+}
