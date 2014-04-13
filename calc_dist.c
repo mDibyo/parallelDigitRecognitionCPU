@@ -41,6 +41,7 @@ void swap_int(int *x, int *y) {
 
 /* Flips the elements of a square array ARR across the y-axis. */
 void flip_horizontal(float *arr, int width) {
+  #pragma omp parallel for collapse(2)
   for (int i = 0; i < width; i++) {
   	for (int j = 0; j < (width / 2); j++) {
   		swap_char(arr + (width)*i + j, arr + (width)*i + (width) - j - 1);
@@ -52,8 +53,9 @@ void flip_horizontal(float *arr, int width) {
 void transpose(float *arr, int width) {
   float *result;
   result = (float*) malloc(sizeof(float) * width * width);
+  // #pragma omp parallel for collapse(2)
   for (int i = 0; i < width; i++) {
-    #pragma omp parallel for
+    //#pragma omp parallel for
   	for (int j = 0; j < width; j++) {
   		result[i + j * width] = arr[i * width + j];
   	}
@@ -88,7 +90,8 @@ void least_sum_squares(float *i1, float *i2, int width,
 
 void extract_portion(float *portion, float *image, int i, int j,
                      int t_width, int i_width) {
-	for (int x = 0; x < t_width; x++) {
+	// #pragma omp parallel for collapse(2)
+  for (int x = 0; x < t_width; x++) {
 		for (int y = 0; y < t_width; y++) {
 			portion[x + y*t_width] = image[(i + x) + (j + y)*i_width];
 		}
