@@ -135,22 +135,55 @@ void least_sum_squares_vectorized(float *image, float *template, int width,
                                   float *least_sum);
 
 void least_sum_squares(float *image, float *template, int width,
-                        float *least_sum) {
-  float sum1 = 0.0, sum2 = 0.0;
-  float sum3 = 0.0, sum4 = 0.0;
-  float sum5 = 0.0, sum6 = 0.0;
-  float sum7 = 0.0, sum8 = 0.0;
+                        float *least_sum, int offx, int offy) {
+  float sum1 = 0.0, sum2 = 0.0, sum3 = 0.0, sum4 = 0.0,
+        sum5 = 0.0, sum6 = 0.0, sum7 = 0.0, sum8 = 0.0;
   int total_pix = width*width - 1;
   for (int i = 0; i < width; i++) {
+    for (int j = 0; j < (width/4)*4; j+=4) {
+      // normal
+      sum1 += squared_distance(image[(i+offx)*width + (j+offy)], template[i*width + j]);
+      sum1 += squared_distance(image[(i+offx)*width + ((j+offy)+1)], template[i*width + (j+1)]);
+      sum1 += squared_distance(image[(i+offx)*width + ((j+offy)+2)], template[i*width + (j+2)]);
+      sum1 += squared_distance(image[(i+offx)*width + ((j+offy)+3)], template[i*width + (j+3)]);
+      // normal flip
+      sum2 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - i*width - j]);
+      sum2 += squared_distance(image[(i+offx)*width + ((j+offy)+1)], template[total_pix - i*width - (j+1)]);
+      sum2 += squared_distance(image[(i+offx)*width + ((j+offy)+2)], template[total_pix - i*width - (j+2)]);
+      sum2 += squared_distance(image[(i+offx)*width + ((j+offy)+3)], template[total_pix - i*width - (j+3)]);
+      // reverse
+      sum3 += squared_distance(image[(i+offx)*width + (j+offy)], template[(i+1)*width - j-1]);
+      sum3 += squared_distance(image[(i+offx)*width + ((j+offy)+1)], template[(i+1)*width - j-2]);
+      sum3 += squared_distance(image[(i+offx)*width + ((j+offy)+2)], template[(i+1)*width - j-3]);
+      sum3 += squared_distance(image[(i+offx)*width + ((j+offy)+3)], template[(i+1)*width - j-4]);
+      // reverse flip
+      sum4 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - (i+1)*width + j+1]);
+      sum4 += squared_distance(image[(i+offx)*width + ((j+offy)+1)], template[total_pix - (i+1)*width + j+2]);
+      sum4 += squared_distance(image[(i+offx)*width + ((j+offy)+2)], template[total_pix - (i+1)*width + j+3]);
+      sum4 += squared_distance(image[(i+offx)*width + ((j+offy)+3)], template[total_pix - (i+1)*width + j+4]);
+    }
+  }
+  if (width % 4 != 0) {
+    for (int i = 0; i < width; i++) {
+      for (int j = (width/4)*4; j < width; j++) {
+        sum1 += squared_distance(image[(i+offx)*width + (j+offy)], template[i*width + j]);
+        sum2 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - i*width - j]);
+        sum3 += squared_distance(image[(i+offx)*width + (j+offy)], template[(i+1)*width - j-1]);
+        sum4 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - (i+1)*width + j+1]);
+      }
+    }
+  }
+  
+  for (int i = 0; i < width; i++) {
     for (int j = 0; j < width; j++) {
-      sum1 += squared_distance(image[i*width + j], template[i*width + j]);
-      sum2 += squared_distance(image[i*width + j], template[total_pix - i*width - j]);
-      sum3 += squared_distance(image[i*width + j], template[(i+1)*width - j-1]);
-      sum4 += squared_distance(image[i*width + j], template[total_pix - (i+1)*width + j+1]);
-      sum5 += squared_distance(image[i*width + j], template[j*width + i]);
-      sum6 += squared_distance(image[i*width + j], template[total_pix - j*width - i]);
-      sum7 += squared_distance(image[i*width + j], template[(j+1)*width - i-1]);
-      sum8 += squared_distance(image[i*width + j], template[total_pix - (j+1)*width + i+1]);
+      // normal transpose
+      sum5 += squared_distance(image[(i+offx)*width + (j+offy)], template[j*width + i]);
+      // normal transpose flip
+      sum6 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - j*width - i]);
+      // reverse transpose
+      sum7 += squared_distance(image[(i+offx)*width + (j+offy)], template[(j+1)*width - i-1]);
+      // reverse transpose flip
+      sum8 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - (j+1)*width + i+1]);
     }
   }
   if (sum1 < *least_sum) {
@@ -207,13 +240,10 @@ void extract_portion(float *portion, float *image, int i, int j,
 float calc_min_dist(float *image, int i_width, int i_height, 
                     float *template, int t_width) {
   float min_dist = UINT_MAX;
-  float portion[t_width*t_width];
+  // float portion[t_width*t_width];
   for (int i = 0; i <= (i_width - t_width); i++) {
     for (int j = 0; j <= (i_height - t_width); j++) {
-      extract_portion(portion, image, i, j, t_width, i_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      // transpose(portion, t_width);
-      // least_sum_squares(portion, template, t_width, &min_dist);
+      least_sum_squares(image, template, t_width, &min_dist, i, j);
     }
   }
   return min_dist;
