@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <omp.h>
-#include <emmintrin.h>
+#include <nmmintrin.h>
 #include "digit_rec.h"
 #include "utils.h"
 #include "limits.h"
@@ -172,11 +172,19 @@ void least_sum_squares(float *image, float *template, int width,
         sum4 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - (i+1)*width + j+1]);
       }
     }
-  }
-  
+  } 
+  /*
   for (int i = 0; i < width; i++) {
     for (int j = 0; j < width; j++) {
-      // normal transpose
+      sum1 += squared_distance(image[(i+offx)*width + (j+offy)], template[i*width + j]);
+      sum2 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - i*width - j]);
+      sum3 += squared_distance(image[(i+offx)*width + (j+offy)], template[(i+1)*width - j-1]);
+      sum4 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - (i+1)*width + j+1]);
+    }
+  } */
+  for (int j = 0; j < width; j++) {
+    for (int i = 0; i < width; i++) {
+       // normal transpose
       sum5 += squared_distance(image[(i+offx)*width + (j+offy)], template[j*width + i]);
       // normal transpose flip
       sum6 += squared_distance(image[(i+offx)*width + (j+offy)], template[total_pix - j*width - i]);
