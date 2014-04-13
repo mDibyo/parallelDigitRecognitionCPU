@@ -41,7 +41,6 @@ void swap_int(int *x, int *y) {
 
 /* Flips the elements of a square array ARR across the y-axis. */
 void flip_horizontal(float *arr, int width) {
-  #pragma omp parallel for collapse(2)
   for (int i = 0; i < width; i++) {
   	for (int j = 0; j < (width / 2); j++) {
   		swap_char(arr + (width)*i + j, arr + (width)*i + (width) - j - 1);
@@ -49,22 +48,37 @@ void flip_horizontal(float *arr, int width) {
   }
 }
 
+void flip_vertical(float *arr, int width) {
+  int inverse_width = 0;
+  inverse_width ++;
+  for (int i = 0; i < (width/2); i++) {
+    for (int j = 0; j < width; j++) {
+      swap_char(arr + width*i + j, arr + width*(width-1-i) + j);
+    }
+  }
+}
+
 /* Transposes the square array ARR. */
 void transpose(float *arr, int width) {
   float *result;
   result = (float*) malloc(sizeof(float) * width * width);
-  // #pragma omp parallel for collapse(2)
   for (int i = 0; i < width; i++) {
-    //#pragma omp parallel for
   	for (int j = 0; j < width; j++) {
-  		result[i + j * width] = arr[i * width + j];
+  		result[i + j * width] = arr[i * width + j]; // [j][i] <- [i][j]
   	}
   }
-  #pragma omp parallel for
   for (int index = 0; index < (width * width); index++) {
     arr[index] = result[index];
   }
   free(result);
+}
+
+void transpose_broke(float *arr, int width) {
+  for (int i = 0; i < width; i++) {
+    for (int j =0; j < width; j++) {
+      swap_char(arr + i + j*width, arr + i*width + j);
+    }
+  }
 }
 
 /* Rotates the square array ARR by 90 degrees counterclockwise. */
@@ -77,20 +91,29 @@ void rotate_ccw_90(unsigned char *arr, int width) {
  */
 void least_sum_squares(float *i1, float *i2, int width,
                         float *least_sum) {
-  float global_sum = 0.0;
-  #pragma omp parallel for      \
-    reduction(+:global_sum)
-    for (int i = 0; i < (width*width); i++) {
-        global_sum += squared_distance(i1[i], i2[i]);
-    }
-  if (global_sum < *least_sum) {
-      *least_sum = global_sum;
+  float sum = 0.0;
+  for (int i = 0; i < (width*width); i++) {
+      sum += squared_distance(i1[i], i2[i]);
+  }
+  if (sum < *least_sum) {
+      *least_sum = sum;
+  }
+}
+
+void reverse_least_sum_squares(float *i1, float *i2, int width,
+                        float *least_sum) {
+  float sum = 0.0;
+  int total_pix = width*width-1;
+  for (int i = total_pix; i >= 0; i--) {
+      sum += squared_distance(i1[i], i2[total_pix-i]);
+  }
+  if (sum < *least_sum) {
+      *least_sum = sum;
   }
 }
 
 void extract_portion(float *portion, float *image, int i, int j,
                      int t_width, int i_width) {
-	// #pragma omp parallel for collapse(2)
   for (int x = 0; x < t_width; x++) {
 		for (int y = 0; y < t_width; y++) {
 			portion[x + y*t_width] = image[(i + x) + (j + y)*i_width];
@@ -102,7 +125,7 @@ void extract_portion(float *portion, float *image, int i, int j,
  * is I_WIDTH * I_HEIGHT, while TEMPLATE is square with side length T_WIDTH. The template
  * image should be flipped, rotated, and translated across IMAGE.
  */
-float calc_min_dist(float *image, int i_width, int i_height, 
+float calc_min_dist_old(float *image, int i_width, int i_height, 
                     float *template, int t_width) {
   float min_dist = UINT_MAX;
   float * portion;
@@ -128,4 +151,28 @@ float calc_min_dist(float *image, int i_width, int i_height,
 		}
 	}
 	return min_dist;
+}
+
+float calc_min_dist(float *image, int i_width, int i_height, 
+                    float *template, int t_width) {
+  float min_dist = UINT_MAX;
+  float * portion;
+  portion = (float*) malloc(sizeof(float)* t_width * t_width);
+  for (int i = 0; i <= (i_width - t_width); i++) {
+    for (int j = 0; j <= (i_height - t_width); j++) {
+      extract_portion(portion, image, i, j, t_width, i_width);
+      least_sum_squares(portion, template, t_width, &min_dist);
+      reverse_least_sum_squares(portion, template, t_width, &min_dist);
+      flip_vertical(portion, t_width);
+      least_sum_squares(portion, template, t_width, &min_dist);
+      reverse_least_sum_squares(portion, template, t_width, &min_dist);
+      transpose(portion, t_width);
+      least_sum_squares(portion, template, t_width, &min_dist);
+      reverse_least_sum_squares(portion, template, t_width, &min_dist);
+      flip_vertical(portion, t_width);
+      least_sum_squares(portion, template, t_width, &min_dist);
+      reverse_least_sum_squares(portion, template, t_width, &min_dist);
+    }
+  }
+  return min_dist;
 }
