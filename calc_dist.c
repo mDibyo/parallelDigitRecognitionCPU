@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <omp.h>
+#include <emmintrin.h>
 #include "digit_rec.h"
 #include "utils.h"
 #include "limits.h"
@@ -49,28 +50,38 @@ void flip_horizontal(float *arr, int width) {
 }
 
 void flip_vertical(float *arr, int width) {
-  int inverse_width = 0;
-  inverse_width ++;
+  float *iwidth, *i_iwidth;
   for (int i = 0; i < (width/2); i++) {
+    iwidth = arr + width*i;
+    i_iwidth = arr + width*(width-1-i);
     for (int j = 0; j < width; j++) {
-      swap_char(arr + width*i + j, arr + width*(width-1-i) + j);
+      swap_char(iwidth + j, i_iwidth + j);
     }
   }
 }
 
 /* Transposes the square array ARR. */
 void transpose(float *arr, int width) {
-  float *result;
-  result = (float*) malloc(sizeof(float) * width * width);
+  int ARRAY_SIZE = width*width;
+  float result[ARRAY_SIZE];
+  // result = (float*) malloc(sizeof(float) * width * width);
   for (int i = 0; i < width; i++) {
   	for (int j = 0; j < width; j++) {
   		result[i + j * width] = arr[i * width + j]; // [j][i] <- [i][j]
   	}
   }
-  for (int index = 0; index < (width * width); index++) {
-    arr[index] = result[index];
+
+  for(int i=0; i<(ARRAY_SIZE/4)*4; i+=4) {
+    arr[i] = result[i];
+    arr[i+1] = result[i+1];
+    arr[i+2] = result[i+2];
+    arr[i+3] = result[i+3];
   }
-  free(result);
+
+  for (int i= (ARRAY_SIZE/4)*4; i< ARRAY_SIZE; i++) {
+      arr[i] = result[i];
+  }
+  // free(result);
 }
 
 void transpose_broke(float *arr, int width) {
@@ -89,23 +100,91 @@ void rotate_ccw_90(unsigned char *arr, int width) {
 /* Find sum of squares pixel to pixel of two square images of the same size and
  * compare to existing sum.
  */
-void least_sum_squares(float *i1, float *i2, int width,
+void least_sum_squares_unrolled(float *image, float *template, int width,
                         float *least_sum) {
-  float sum = 0.0;
-  for (int i = 0; i < (width*width); i++) {
-      sum += squared_distance(i1[i], i2[i]);
+  float sum1 = 0.0, sum2 = 0.0;
+  // float sum3 = 0.0, sum4 = 0.0;
+  int total_pix = width*width;
+  for (int i = 0; i < (total_pix/4)*4; i+=4) {
+    // normal
+    sum1 += squared_distance(image[i], template[i]);
+    sum1 += squared_distance(image[i+1], template[i+1]);
+    sum1 += squared_distance(image[i+2], template[i+2]);
+    sum1 += squared_distance(image[i+3], template[i+3]);
+    // normal reverse
+    sum2 += squared_distance(image[i], template[total_pix-i-1]);
+    sum2 += squared_distance(image[i+1], template[total_pix-i-2]);
+    sum2 += squared_distance(image[i+2], template[total_pix-i-3]);
+    sum2 += squared_distance(image[i+3], template[total_pix-i-4]);
+    // flipped
+    // sum3 += squared_distance(image[i], template)
   }
-  if (sum < *least_sum) {
-      *least_sum = sum;
+  for (int i=(total_pix/4)*4; i < total_pix; i++) {
+    sum1 += squared_distance(image[i], template[i]);
+    sum2 += squared_distance(image[i], template[total_pix-i-1]);
+  }
+  if (sum1 < *least_sum) {
+    *least_sum = sum1;
+  }
+  if (sum2 < *least_sum) {
+    *least_sum = sum2;
   }
 }
 
-void reverse_least_sum_squares(float *i1, float *i2, int width,
+void least_sum_squares_vectorized(float *image, float *template, int width,
+                                  float *least_sum);
+
+void least_sum_squares(float *image, float *template, int width,
+                        float *least_sum) {
+  float sum1 = 0.0, sum2 = 0.0;
+  float sum3 = 0.0, sum4 = 0.0;
+  float sum5 = 0.0, sum6 = 0.0;
+  float sum7 = 0.0, sum8 = 0.0;
+  int total_pix = width*width - 1;
+  for (int i = 0; i < width; i++) {
+    for (int j = 0; j < width; j++) {
+      sum1 += squared_distance(image[i*width + j], template[i*width + j]);
+      sum2 += squared_distance(image[i*width + j], template[total_pix - i*width - j]);
+      sum3 += squared_distance(image[i*width + j], template[(i+1)*width - j-1]);
+      sum4 += squared_distance(image[i*width + j], template[total_pix - (i+1)*width + j+1]);
+      sum5 += squared_distance(image[i*width + j], template[j*width + i]);
+      sum6 += squared_distance(image[i*width + j], template[total_pix - j*width - i]);
+      sum7 += squared_distance(image[i*width + j], template[(j+1)*width - i-1]);
+      sum8 += squared_distance(image[i*width + j], template[total_pix - (j+1)*width + i+1]);
+    }
+  }
+  if (sum1 < *least_sum) {
+    *least_sum = sum1;
+  }
+  if (sum2 < *least_sum) {
+    *least_sum = sum2;
+  }
+  if (sum3 < *least_sum) {
+    *least_sum = sum3;
+  }
+  if (sum4 < *least_sum) {
+    *least_sum = sum4;
+  }
+  if (sum5 < *least_sum) {
+    *least_sum = sum5;
+  }
+  if (sum6 < *least_sum) {
+    *least_sum = sum6;
+  }
+  if (sum7 < *least_sum) {
+    *least_sum = sum7;
+  }
+  if (sum8 < *least_sum) {
+    *least_sum = sum8;
+  }
+}
+
+void reverse_least_sum_squares(float *image, float *template, int width,
                         float *least_sum) {
   float sum = 0.0;
   int total_pix = width*width-1;
-  for (int i = total_pix; i >= 0; i--) {
-      sum += squared_distance(i1[i], i2[total_pix-i]);
+  for (int i = 0; i < total_pix; i++) {
+      sum += squared_distance(image[i], template[total_pix-i]);
   }
   if (sum < *least_sum) {
       *least_sum = sum;
@@ -128,22 +207,13 @@ void extract_portion(float *portion, float *image, int i, int j,
 float calc_min_dist(float *image, int i_width, int i_height, 
                     float *template, int t_width) {
   float min_dist = UINT_MAX;
-  float * portion;
-  portion = (float*) malloc(sizeof(float)* t_width * t_width);
+  float portion[t_width*t_width];
   for (int i = 0; i <= (i_width - t_width); i++) {
     for (int j = 0; j <= (i_height - t_width); j++) {
       extract_portion(portion, image, i, j, t_width, i_width);
       least_sum_squares(portion, template, t_width, &min_dist);
-      reverse_least_sum_squares(portion, template, t_width, &min_dist);
-      flip_vertical(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      reverse_least_sum_squares(portion, template, t_width, &min_dist);
-      transpose(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      reverse_least_sum_squares(portion, template, t_width, &min_dist);
-      flip_vertical(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      reverse_least_sum_squares(portion, template, t_width, &min_dist);
+      // transpose(portion, t_width);
+      // least_sum_squares(portion, template, t_width, &min_dist);
     }
   }
   return min_dist;
