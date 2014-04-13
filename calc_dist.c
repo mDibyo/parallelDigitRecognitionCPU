@@ -125,34 +125,6 @@ void extract_portion(float *portion, float *image, int i, int j,
  * is I_WIDTH * I_HEIGHT, while TEMPLATE is square with side length T_WIDTH. The template
  * image should be flipped, rotated, and translated across IMAGE.
  */
-float calc_min_dist_old(float *image, int i_width, int i_height, 
-                    float *template, int t_width) {
-  float min_dist = UINT_MAX;
-  float * portion;
-  portion = (float*) malloc(sizeof(float)* t_width * t_width);
-	for (int i = 0; i <= (i_width - t_width); i++) {
-		for (int j = 0; j <= (i_height - t_width); j++) {
-			extract_portion(portion, image, i, j, t_width, i_width);
-			least_sum_squares(portion, template, t_width, &min_dist);
-			flip_horizontal(portion, t_width);
-			least_sum_squares(portion, template, t_width, &min_dist);
-			transpose(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      flip_horizontal(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      transpose(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      flip_horizontal(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      transpose(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-      flip_horizontal(portion, t_width);
-      least_sum_squares(portion, template, t_width, &min_dist);
-		}
-	}
-	return min_dist;
-}
-
 float calc_min_dist(float *image, int i_width, int i_height, 
                     float *template, int t_width) {
   float min_dist = UINT_MAX;
