@@ -40,16 +40,16 @@ void least_sum_squares(float *image, float *template, int i_width, int t_width,
       sum3 += squared_distance(image[offset + i*i_width + j], template[(i+1)*t_width - j-1]);
       // normal transpose flip
       sum4 += squared_distance(image[offset + i*i_width + j], template[total_pix - (i+1)*t_width + j+1]);
+      // normal transpose flip
+      sum6 += squared_distance(image[offset + i*i_width + j], template[total_pix - j*t_width - i]);
+      // reverse transpose
+      sum7 += squared_distance(image[offset + i*i_width + j], template[(j+1)*t_width - i-1]);
     }
   }
   for (int j = 0; j < t_width; j++) {
     for (int i = 0; i < t_width; i++) {
        // normal transpose
       sum5 += squared_distance(image[offset + i*i_width + j], template[j*t_width + i]);
-      // normal transpose flip
-      sum6 += squared_distance(image[offset + i*i_width + j], template[total_pix - j*t_width - i]);
-      // reverse transpose
-      sum7 += squared_distance(image[offset + i*i_width + j], template[(j+1)*t_width - i-1]);
       // reverse transpose flip
       sum8 += squared_distance(image[offset + i*i_width + j], template[total_pix - (j+1)*t_width + i+1]);
     }

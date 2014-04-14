@@ -79,6 +79,8 @@ int main(int argc, char** argv) {
     benchmark_matrix(512,511,510);
     benchmark_matrix(384,360,355);
     benchmark_matrix(171,171,143);
+    benchmark_matrix(511,511,511);
+    benchmark_matrix(100, 80, 60);
 
     return 0;
 }
